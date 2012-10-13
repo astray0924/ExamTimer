@@ -7,21 +7,24 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements OnClickListener {
-	private TextView tvTime;
+public class MainActivity extends Activity implements OnClickListener,
+		OnCheckedChangeListener {
 	private Timer timer;
+	private TextView tvTime;
+	private CheckBox chkExtraTime;
 	private Button btnStart;
 	private Button btnReset;
 
 	// attributes
-	private int INIT_MILLISECONDS = 600000;
-	
-	// events
-	private boolean firstAlarm;
-	private boolean secondAlarm;
+	private static final int DEFAULT_TIME = 600000;
+	private static final int EXTRA_TIME = 660000;
+	private boolean isExtraMode = false;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -32,17 +35,19 @@ public class MainActivity extends Activity implements OnClickListener {
 		initUI();
 
 		// 타이버 초기화
-		timer = new Timer(INIT_MILLISECONDS, 1000);
-		setTimerText(INIT_MILLISECONDS);
+		timer = new Timer(DEFAULT_TIME, 1000);
+		setTimerText(DEFAULT_TIME);
 	}
 
 	private void initUI() {
 		tvTime = (TextView) findViewById(R.id.time);
+		chkExtraTime = (CheckBox) findViewById(R.id.extra_time);
 		btnStart = (Button) findViewById(R.id.start);
 		btnReset = (Button) findViewById(R.id.reset);
 
 		btnStart.setOnClickListener(this);
 		btnReset.setOnClickListener(this);
+		chkExtraTime.setOnCheckedChangeListener(this);
 	}
 
 	@Override
@@ -60,14 +65,20 @@ public class MainActivity extends Activity implements OnClickListener {
 
 		@Override
 		public void onFinish() {
-			Toast.makeText(MainActivity.this, "Finished!", Toast.LENGTH_SHORT).show();
+			Toast.makeText(MainActivity.this, "Finished!", Toast.LENGTH_SHORT)
+					.show();
 		}
 
 		@Override
 		public void onTick(long millisUntilFinished) {
 			setTimerText(millisUntilFinished);
-			
+
 			// 이제 여기서 8분 체크
+			/**
+			 * 시험지 읽는시간 1분 (선택)
+			 * 중간 알림 (8/9분째)
+			 * 마지막 알림 (10/11분째)
+			 */
 		}
 
 	}
@@ -86,14 +97,22 @@ public class MainActivity extends Activity implements OnClickListener {
 		switch (id) {
 		case R.id.start:
 			timer.start();
+			
+			// toggle the buttons' visibility
+			btnStart.setVisibility(View.GONE);
+			btnReset.setVisibility(View.VISIBLE);
 			break;
 		case R.id.reset:
-			if (timer != null) {				
+			if (timer != null) {
 				timer.cancel();
 			}
+
+			timer = new Timer(DEFAULT_TIME, 1000);
+			setTimerText(DEFAULT_TIME);
 			
-			timer = new Timer(INIT_MILLISECONDS, 1000);
-			setTimerText(INIT_MILLISECONDS);
+			// toggle the buttons' visibility
+			btnStart.setVisibility(View.VISIBLE);
+			btnReset.setVisibility(View.GONE);
 			break;
 		}
 
@@ -106,4 +125,11 @@ public class MainActivity extends Activity implements OnClickListener {
 		String timeString = String.format("%02d:%02d", minutes, seconds);
 		tvTime.setText(timeString);
 	}
+
+	@Override
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+		isExtraMode = isChecked;
+
+	}
+
 }
