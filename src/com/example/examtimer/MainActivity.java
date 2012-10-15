@@ -16,15 +16,15 @@ import android.widget.Toast;
 public class MainActivity extends Activity implements OnClickListener,
 		OnCheckedChangeListener {
 	private CountDownTimer timer;
-	private TextView tvTime;
+	private TextView tv_time;
 	private CheckBox chk_extra_time;
-	private Button btnStart;
-	private Button btnReset;
+	private Button btn_start;
+	private Button btn_reset;
 
 	// attributes
-	private static final int DEFAULT_TIME = 6000 * 10 * 10;
-	private static final int EXTRA_TIME = 6000;
-	private static final int FIRST_ALARM_TIME = 6000 * 2;
+	private static final int DEFAULT_TIME = 6000 * 10 * 10; // 10 minutes
+	private static final int EXTRA_TIME = 6000 * 10 * 1; // 1 minutes
+	private static final int FIRST_ALARM_TIME = 6000 * 10 * 2; // 2 minutes
 	private boolean isExtraMode = false;
 
 	// Timer modes
@@ -32,17 +32,68 @@ public class MainActivity extends Activity implements OnClickListener,
 		DEFAULT, EXTRA
 	};
 
-	private void setTimerMode(TimerMode mode) {
-		switch (mode) {
-		case DEFAULT:
-			timer = new DefaultTimer(DEFAULT_TIME, 100);
-			setTimerText(DEFAULT_TIME);
-			break;
-		case EXTRA:
-			timer = new ExtraTimer(EXTRA_TIME, 100);
-			setTimerText(EXTRA_TIME);
-			break;
+	private class ExtraTimer extends CountDownTimer {
+		private int seconds_left = 0;
+	
+		public ExtraTimer(long millisInFuture, long countDownInterval) {
+			super(millisInFuture, countDownInterval);
 		}
+	
+		@Override
+		public void onFinish() {
+			setTimerText(0);
+	
+			// exam starts!!
+			notifyExamStart();
+	
+			setTimerMode(TimerMode.DEFAULT);
+			timer.start();
+	
+		}
+	
+		@Override
+		public void onTick(long millisUntilFinished) {
+			setTimerText(millisUntilFinished);
+			// if (Math.round((float) millisUntilFinished / 1000.0f) !=
+			// seconds_left) {
+			// seconds_left = Math
+			// .round((float) millisUntilFinished / 1000.0f);
+			// setTimerText(seconds_left);
+			// }
+		}
+	
+	}
+
+	private class DefaultTimer extends CountDownTimer {
+		private boolean firstAlarmHandled = false;
+	
+		public DefaultTimer(long millisInFuture, long countDownInterval) {
+			super(millisInFuture, countDownInterval);
+	
+		}
+	
+		@Override
+		public void onFinish() {
+			setTimerText(0);
+	
+			// second alarm
+			notifySecondAlarm();
+	
+			Toast.makeText(MainActivity.this, "Finished!", Toast.LENGTH_SHORT)
+					.show();
+		}
+	
+		@Override
+		public void onTick(long millisUntilFinished) {
+			setTimerText(millisUntilFinished);
+	
+			if (millisUntilFinished < FIRST_ALARM_TIME && !firstAlarmHandled) {
+				// first alarm
+				notifyFirstAlarm();
+				firstAlarmHandled = true;
+			}
+		}
+	
 	}
 
 	@Override
@@ -58,13 +109,13 @@ public class MainActivity extends Activity implements OnClickListener,
 	}
 
 	private void initUI() {
-		tvTime = (TextView) findViewById(R.id.time);
+		tv_time = (TextView) findViewById(R.id.time);
 		chk_extra_time = (CheckBox) findViewById(R.id.extra_time);
-		btnStart = (Button) findViewById(R.id.start);
-		btnReset = (Button) findViewById(R.id.reset);
+		btn_start = (Button) findViewById(R.id.start);
+		btn_reset = (Button) findViewById(R.id.reset);
 
-		btnStart.setOnClickListener(this);
-		btnReset.setOnClickListener(this);
+		btn_start.setOnClickListener(this);
+		btn_reset.setOnClickListener(this);
 		chk_extra_time.setOnCheckedChangeListener(this);
 	}
 
@@ -74,65 +125,21 @@ public class MainActivity extends Activity implements OnClickListener,
 		return true;
 	}
 
-	private class ExtraTimer extends CountDownTimer {
-		private int seconds_left = 0;
-
-		public ExtraTimer(long millisInFuture, long countDownInterval) {
-			super(millisInFuture, countDownInterval);
+	private void setTimerMode(TimerMode mode) {
+		switch (mode) {
+		case DEFAULT:
+			timer = new DefaultTimer(DEFAULT_TIME, 100);
+			setTimerText(DEFAULT_TIME);
+			break;
+		case EXTRA:
+			timer = new ExtraTimer(EXTRA_TIME, 100);
+			setTimerText(EXTRA_TIME);
+			break;
 		}
-
-		@Override
-		public void onFinish() {
-			setTimerText(0);
-
-			Toast.makeText(MainActivity.this, "시험 시작!", Toast.LENGTH_SHORT)
-					.show();
-
-			setTimerMode(TimerMode.DEFAULT);
-			timer.start();
-
-		}
-
-		@Override
-		public void onTick(long millisUntilFinished) {
-			setTimerText(millisUntilFinished);
-			// if (Math.round((float) millisUntilFinished / 1000.0f) !=
-			// seconds_left) {
-			// seconds_left = Math.round((float) millisUntilFinished / 1000.0f);
-			// setTimerText(seconds_left);
-			// }
-		}
-
 	}
 
-	private class DefaultTimer extends CountDownTimer {
-		private boolean firstAlarmHandled = false;
-
-		public DefaultTimer(long millisInFuture, long countDownInterval) {
-			super(millisInFuture, countDownInterval);
-
-		}
-
-		@Override
-		public void onFinish() {
-			setTimerText(0);
-
-			notifySecondAlarm();
-
-			Toast.makeText(MainActivity.this, "Finished!", Toast.LENGTH_SHORT)
-					.show();
-		}
-
-		@Override
-		public void onTick(long millisUntilFinished) {
-			setTimerText(millisUntilFinished);
-
-			if (millisUntilFinished < FIRST_ALARM_TIME && !firstAlarmHandled) {
-				notifyFirstAlarm();
-				firstAlarmHandled = true;
-			}
-		}
-
+	private void notifyExamStart() {
+		Toast.makeText(MainActivity.this, "시험 시작!", Toast.LENGTH_SHORT).show();
 	}
 
 	private void notifyFirstAlarm() {
@@ -155,6 +162,13 @@ public class MainActivity extends Activity implements OnClickListener,
 		chk_extra_time.setEnabled(enable);
 	}
 
+	private void setTimerText(long milliseconds) {
+		int minutes = milliToMinute(milliseconds);
+		int seconds = milliToSec(milliseconds);
+		String timeString = String.format("%02d:%02d", minutes, seconds);
+		tv_time.setText(timeString);
+	}
+
 	@Override
 	public void onClick(View view) {
 		int id = view.getId();
@@ -170,8 +184,8 @@ public class MainActivity extends Activity implements OnClickListener,
 			timer.start();
 
 			// toggle the buttons' visibility
-			btnStart.setVisibility(View.GONE);
-			btnReset.setVisibility(View.VISIBLE);
+			btn_start.setVisibility(View.GONE);
+			btn_reset.setVisibility(View.VISIBLE);
 
 			// 상태 변화 반영
 			setExtraCheckBoxEnable(false);
@@ -189,20 +203,13 @@ public class MainActivity extends Activity implements OnClickListener,
 			}
 
 			// toggle the buttons' visibility
-			btnStart.setVisibility(View.VISIBLE);
-			btnReset.setVisibility(View.GONE);
+			btn_start.setVisibility(View.VISIBLE);
+			btn_reset.setVisibility(View.GONE);
 
 			setExtraCheckBoxEnable(true);
 			break;
 		}
 
-	}
-
-	private void setTimerText(long milliseconds) {
-		int minutes = milliToMinute(milliseconds);
-		int seconds = milliToSec(milliseconds);
-		String timeString = String.format("%02d:%02d", minutes, seconds);
-		tvTime.setText(timeString);
 	}
 
 	@Override
