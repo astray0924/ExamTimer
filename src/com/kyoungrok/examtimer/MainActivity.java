@@ -1,4 +1,6 @@
-package com.example.examtimer;
+package com.kyoungrok.examtimer;
+
+import com.example.examtimer.R;
 
 import android.app.Activity;
 import android.os.Bundle;
